@@ -1,0 +1,19 @@
+{
+  "name": "cleancoder-exam-extractor",
+  "version": "1.0.0",
+  "description": "A script that extracts the quiz from clean coder website",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@10.191.21.36:KDDP/cleancoder-exam-extractor.git"
+  },
+  "author": "Gervel Giva",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.16.3"
+  }
+}
