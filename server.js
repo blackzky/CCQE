@@ -7,6 +7,7 @@
     const PORT = 3000;
     const FOLDER_NAME = 'quiz';
     const FILE_EXTENSION = 'quiz';
+    const ENCODING = 'utf8';
 
     const fs = require('fs');
     const express = require('express');
@@ -23,15 +24,40 @@
     app.post('/extract', handleExtractRoute);
 
     app.listen(PORT, () => {
-        console.log(`Cleancoder Exam Extractor (v${VERSION}) running on port ${PORT}!`);
+        console.log(`Cleancoder Exam Extractor (${VERSION}) running on port ${PORT}!`);
     });
 
     function handleExtractRoute(req, res) {
         let quiz = req.body.quiz;
         let filename = createFilename(quiz.title);
-        let writeData = parseQuiz(quiz);
+        let parsedQuiz = parseQuiz(quiz);
+        let writeData = JSON.stringify(parsedQuiz);
 
-        saveQuiz(res, filename, JSON.stringify(writeData))
+        saveQuiz(
+                filename,
+                writeData)
+            .then((parsedData) => {
+                // Save file
+                console.log('[Has existing data] Updating file...');
+                return saveFile(filename, JSON.stringify(parsedData));
+            }).then((result) => {
+                console.log('RESULT: ', result);
+                res.send(result);
+            }).catch((err) => {
+                console.log('[No existing data] Saving new file...');
+                saveFile(
+                        filename,
+                        writeData)
+                    .then((result) => {
+                        console.log('RESULT: ', result);
+                        res.send(result);
+                    }).catch((err) => {
+                        console.log('[ERROR] Failed to save quiz.');
+                        console.log(err);
+                        console.log('RESULT: ERROR');
+                        res.send('ERROR');
+                    })
+            });
     }
 
     function parseQuiz(quiz) {
@@ -63,14 +89,65 @@
         return writeData;
     }
 
-    function saveQuiz(res, filename, data) {
-        fs.writeFile(filename, data, (err) => {
-            if (err) {
-                return console.log(err);
-            }
+    function saveQuiz(filename, writeData) {
+        return new Promise((resolve, reject) => {
+            // Open file if it exist
+            fs.readFile(filename, ENCODING, (err, readData) => {
+                let updatedData = writeData;
+                console.log('Cheking if file exist...');
+                if (err) {
+                    console.log('[Read file] ERROR: File does not exist');
+                    return reject(err);
+                }
 
-            console.log(`Quiz saved to ${filename}`);
-            res.send('DONE');
+                if (readData) {
+                    console.log('[Read file] Existing data found');
+                    updatedData = updateData(readData, writeData);
+                    // Add new entries if
+                } else {
+                    console.log('[Read file] readData is null');
+                }
+                resolve(updatedData);
+            });
+        });
+    }
+
+    function updateData(currentData, newData) {
+        let cData = JSON.parse(currentData);
+        let nData = JSON.parse(newData);
+
+        let updatedData = cData;
+
+
+        if (cData.title === nData.title) {
+            for (let i in nData.quizItems) {
+                // console.log(cData.quizItems[i].question);
+
+                let found = cData.quizItems.find((quiz) => {
+                    return quiz.question === nData.quizItems[i].question;
+                });
+                if (!found) {
+                    updatedData.quizItems.push(nData.quizItems[i]);
+                }
+            }
+        } else {
+            console.log('[Updating data] ERROR: Title is not the same!');
+            console.log('currentData: ', cData.title);
+            console.log('newData: ', nData.title);
+        }
+        return updatedData;
+    }
+
+    function saveFile(filename, parsedData) {
+        return new Promise(function (resolve, reject) {
+            return fs.writeFile(filename, parsedData, (err) => {
+                if (err) {
+                    return console.log('[Write file] ERROR:', err);
+                    return reject(err);
+                }
+                console.log(`[Write file] SUCCESS: Quiz saved to ${filename}`);
+                resolve('DONE');
+            });
         });
     }
 
@@ -81,7 +158,7 @@
     function sanitizeFilename(text) {
         return text.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     }
-    
+
     function setCORS(req, res, next) {
 
         // Website you wish to allow to connect
