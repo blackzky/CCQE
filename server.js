@@ -3,7 +3,7 @@
 (() => {
     'use strict';
 
-    const VERSION = "v1.0.0";
+    const VERSION = "v1.0.1";
     const PORT = 3000;
     const FOLDER_NAME = 'quiz';
     const FILE_EXTENSION = 'quiz';
@@ -94,7 +94,7 @@
             // Open file if it exist
             fs.readFile(filename, ENCODING, (err, readData) => {
                 let updatedData = writeData;
-                console.log('Cheking if file exist...');
+                console.log('\n [New data] Cheking if file exist...');
                 if (err) {
                     console.log('[Read file] ERROR: File does not exist');
                     return reject(err);
@@ -117,8 +117,9 @@
         let nData = JSON.parse(newData);
 
         let updatedData = cData;
+        console.log('[Read file] Existing number of quiz: ', cData.quizItems.length);
 
-
+        let newEntries = 0;
         if (cData.title === nData.title) {
             for (let i in nData.quizItems) {
                 // console.log(cData.quizItems[i].question);
@@ -127,9 +128,11 @@
                     return quiz.question === nData.quizItems[i].question;
                 });
                 if (!found) {
+                    newEntries++;
                     updatedData.quizItems.push(nData.quizItems[i]);
                 }
             }
+            console.log('[Update data] New entries added: ', newEntries);
         } else {
             console.log('[Updating data] ERROR: Title is not the same!');
             console.log('currentData: ', cData.title);
